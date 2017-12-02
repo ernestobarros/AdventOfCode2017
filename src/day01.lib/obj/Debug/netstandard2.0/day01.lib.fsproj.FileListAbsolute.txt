@@ -1,0 +1,5 @@
+D:\work\fsharp\adventofcode\src\day01.lib\bin\Debug\netstandard2.0\day01.lib.deps.json
+D:\work\fsharp\adventofcode\src\day01.lib\bin\Debug\netstandard2.0\day01.lib.dll
+D:\work\fsharp\adventofcode\src\day01.lib\bin\Debug\netstandard2.0\day01.lib.pdb
+D:\work\fsharp\adventofcode\src\day01.lib\obj\Debug\netstandard2.0\day01.lib.dll
+D:\work\fsharp\adventofcode\src\day01.lib\obj\Debug\netstandard2.0\day01.lib.pdb

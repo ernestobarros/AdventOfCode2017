@@ -1,0 +1,10 @@
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\xunit.runner.visualstudio.dotnetcore.testadapter.dll
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\xunit.runner.utility.netstandard15.dll
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\xunit.runner.reporters.netstandard15.dll
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\day01.tests.deps.json
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\day01.tests.runtimeconfig.json
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\day01.tests.runtimeconfig.dev.json
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\day01.tests.dll
+D:\work\fsharp\adventofcode\src\day01.tests\bin\Debug\netcoreapp2.0\day01.tests.pdb
+D:\work\fsharp\adventofcode\src\day01.tests\obj\Debug\netcoreapp2.0\day01.tests.dll
+D:\work\fsharp\adventofcode\src\day01.tests\obj\Debug\netcoreapp2.0\day01.tests.pdb
