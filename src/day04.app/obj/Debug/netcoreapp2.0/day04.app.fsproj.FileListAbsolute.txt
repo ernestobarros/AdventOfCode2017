@@ -1,0 +1,7 @@
+D:\work\fsharp\adventofcode\src\day04.app\bin\Debug\netcoreapp2.0\day04.app.deps.json
+D:\work\fsharp\adventofcode\src\day04.app\bin\Debug\netcoreapp2.0\day04.app.runtimeconfig.json
+D:\work\fsharp\adventofcode\src\day04.app\bin\Debug\netcoreapp2.0\day04.app.runtimeconfig.dev.json
+D:\work\fsharp\adventofcode\src\day04.app\bin\Debug\netcoreapp2.0\day04.app.dll
+D:\work\fsharp\adventofcode\src\day04.app\bin\Debug\netcoreapp2.0\day04.app.pdb
+D:\work\fsharp\adventofcode\src\day04.app\obj\Debug\netcoreapp2.0\day04.app.dll
+D:\work\fsharp\adventofcode\src\day04.app\obj\Debug\netcoreapp2.0\day04.app.pdb
