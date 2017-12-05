@@ -1113,7 +1113,7 @@ let stepsToExit (instructions: int []) =
         else
             let offset = instructions.[jumpIndex]
             let nextJumpIndex = jumpIndex + offset
-            // Mutate instruction with +1
+            // Mutate instruction with -1 or +1
             instructions.[jumpIndex] <-
                 if offset >= 3
                 then instructions.[jumpIndex] - 1
