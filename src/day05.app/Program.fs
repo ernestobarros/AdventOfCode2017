@@ -1111,10 +1111,13 @@ let stepsToExit (instructions: int []) =
     let rec loop jumpIndex countSteps (instructions: int []) =
         if jumpIndex > lastIndex then countSteps
         else
-            let jumpDistance = instructions.[jumpIndex]
-            let nextJumpIndex = jumpIndex + jumpDistance
+            let offset = instructions.[jumpIndex]
+            let nextJumpIndex = jumpIndex + offset
             // Mutate instruction with +1
-            instructions.[jumpIndex] <- instructions.[jumpIndex] + 1
+            instructions.[jumpIndex] <-
+                if offset >= 3
+                then instructions.[jumpIndex] - 1
+                else instructions.[jumpIndex] + 1
             loop
                 <| nextJumpIndex
                 <| countSteps + 1
