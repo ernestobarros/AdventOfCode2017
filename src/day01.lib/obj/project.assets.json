@@ -3852,6 +3852,9 @@
   },
   "project": {
     "version": "1.0.0",
+    "restoreSettings": {
+      "hideWarningsAndErrors": true
+    },
     "restore": {
       "projectUniqueName": "D:\\work\\fsharp\\adventofcode\\src\\day01.lib\\day01.lib.fsproj",
       "projectName": "day01.lib",
@@ -3863,12 +3866,14 @@
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "C:\\Users\\nani\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\nani\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "netstandard2.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3880,15 +3885,15 @@
     "frameworks": {
       "netstandard2.0": {
         "dependencies": {
+          "FSharp.Core": {
+            "target": "Package",
+            "version": "[4.2.*, )"
+          },
           "NETStandard.Library": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "2.0.0",
+            "version": "[2.0.0, )",
             "autoReferenced": true
-          },
-          "FSharp.Core": {
-            "target": "Package",
-            "version": "4.2.*"
           }
         },
         "imports": [

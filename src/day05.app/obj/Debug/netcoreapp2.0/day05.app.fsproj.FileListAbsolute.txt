@@ -5,3 +5,4 @@ D:\work\fsharp\adventofcode\src\day05.app\bin\Debug\netcoreapp2.0\day05.app.dll
 D:\work\fsharp\adventofcode\src\day05.app\bin\Debug\netcoreapp2.0\day05.app.pdb
 D:\work\fsharp\adventofcode\src\day05.app\obj\Debug\netcoreapp2.0\day05.app.dll
 D:\work\fsharp\adventofcode\src\day05.app\obj\Debug\netcoreapp2.0\day05.app.pdb
+D:\work\fsharp\adventofcode\src\day05.app\obj\Debug\netcoreapp2.0\day05.app.fsprojResolveAssemblyReference.cache
