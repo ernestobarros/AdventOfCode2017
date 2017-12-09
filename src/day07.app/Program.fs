@@ -17,31 +17,7 @@ gyxo (61)
 cntj (57)
     """
 
-let input1 =
-    """
-aaaa (1) -> baaa, caaa
-baaa (2) -> daaa, eaaa
-caaa (2) -> faaa, gaaa
-daaa (3)
-eaaa (3)
-faaa (3)
-gaaa (3)
-pbga (66)
-xhth (57)
-ebii (61)
-havc (66)
-ktlj (57)
-fwft (72) -> ktlj, cntj, xhth
-qoyq (66)
-padx (45) -> pbga, havc, qoyq
-tknk (41) -> ugml, padx, fwft, aaaa
-jptl (61)
-ugml (68) -> gyxo, ebii, jptl
-gyxo (61)
-cntj (57)
-    """
-
-let input2 =
+let input =
     """
 llyhqfe (21)
 vpbdpfm (74) -> ndegtj, wnwxs
@@ -1128,7 +1104,6 @@ ckqwb (234)
 kligtj (80)
     """
 
-
 let deserialize (input: string) =
     input.Trim().Split([|'\n'|], StringSplitOptions.RemoveEmptyEntries)
     |> Array.map(fun x -> Regex.Replace(x.Trim(), "\s+", " "))
@@ -1138,8 +1113,13 @@ type Program =
     {
         Name: string
         Weight: int
+        // Total weight of all programs (current + dependencies)
+        // Unknown at the beginning
+        TotalWeight: int option
         SubProgramNames: string list
-        SubPrograms: (Program list) option // Will be converted from sub program names
+        // Will eventually be converted from sub program names
+        // Unknown at the beginning
+        SubPrograms: (Program list) option
     }
 
 
@@ -1154,12 +1134,10 @@ let parseProgram =
             |> fun x -> if x.Success then x.Value else ""
             |> fun x -> x.Split(", ", StringSplitOptions.RemoveEmptyEntries)
             |> List.ofArray
-        // printfn "Name        : %A" name
-        // printfn "Weight      : %A" weight
-        // printfn "SubPrograms : %A" subPrograms
         {
             Name          = name
             Weight        = (weight |> int)
+            TotalWeight   = None
             SubProgramNames   = subPrograms
             SubPrograms =
                 if subPrograms.Length = 0
@@ -1167,21 +1145,26 @@ let parseProgram =
                 else None // Unknown
         }
 
-let hasUnConvertedSubProgramNames (x: Program) =
-    x.SubProgramNames.Length > 0 && x.SubPrograms.IsNone
-
-let mkSubProgrames = id
+let sumWeight (program: Program) =
+    {
+        program with
+            TotalWeight =
+                program.SubPrograms.Value
+                |> List.sumBy(fun (x: Program) -> x.TotalWeight.Value)
+                |> (+) program.Weight
+                |> Some
+    }
 
 let mkStructure programs =
-    // xs1 : programs with known dependencies
-    // xs2 : programs with unknown dependencies
+    /// listKnown   : programs with known dependencies
+    /// listUnknown : programs with unknown dependencies
     let rec loop (listKnown: Program list) (listUnknown: Program list) (acc: int) (logLevel: int) :Program option =
         match (listKnown, listUnknown) with
         |_ when acc = logLevel+1 -> None
         |([rootProgram],[]) -> Some(rootProgram)
         |[],[] -> None
         |_ ->
-            let xs1': Program list =
+            let newListKnown: Program list =
                 let newDiscoveredDependencies =
                     listUnknown
                     |> List.filter(fun x ->
@@ -1192,66 +1175,88 @@ let mkStructure programs =
                                 x'.Name = name)
                             )
                         )
-                    |> List.map(fun x ->
+                    |> List.map(fun program ->
                         {
-                            Name = x.Name
-                            Weight = x.Weight
-                            SubProgramNames = x.SubProgramNames
-                            SubPrograms =
-                                x.SubProgramNames
-                                |> List.map(fun name ->
-                                    listKnown
-                                    |> List.find(fun (x': Program) -> x'.Name = name))
-                                |> (function |[] -> None |x' -> Some(x'))
-                        })
+                            program with
+                                SubPrograms =
+                                    program.SubProgramNames
+                                    |> List.map(fun name ->
+                                        listKnown
+                                        |> List.find(fun (x': Program) -> x'.Name = name))
+                                    |> (function |[] -> None |x' -> Some(x'))
+                        } |> sumWeight)
+
                 let forgottenKnownDependencies =
-                    if acc = logLevel then
-                        printfn "Round %i !!" acc
-                        printfn "List known"
-                        listKnown
-                        |> List.map(fun x -> x.Name)
-                        |> List.iter(printfn "===> %A <===")
-                        printfn "List unknown"
-                        listUnknown
-                        |> List.map(fun x -> x.Name)
-                        |> List.iter(printfn "===> %A <===")
-                    // TODO: List known broken after round 1 !!
-                    // TODO: fix PLEASE PLEASE PLEASE !!
                     listKnown
                     |> List.filter(fun x ->
                         newDiscoveredDependencies
                         |> List.collect(fun x' ->
-                            // printfn "List sub program names"
-                            // printfn "%A" (x'.SubPrograms.Value.Length = x'.SubProgramNames.Length)
                             x'.SubProgramNames)
                         |> List.exists(fun name -> name = x.Name)
                         |> not
                         )
-                if acc = logLevel then
-                    printfn "List new discovered dependencies"
-                    newDiscoveredDependencies
-                    |> List.map(fun x -> x.Name)
-                    |> List.iter(printfn "===> %A <===")
-                    printfn "List forgotten known dependencies"
-                    forgottenKnownDependencies
-                    |> List.map(fun x -> x.Name)
-                    |> List.iter(printfn "===> %A <===")
                 List.append newDiscoveredDependencies forgottenKnownDependencies
 
-            let xs2': Program list =
+            let newListUnknown: Program list =
                 listUnknown
                 |> List.filter(fun x ->
-                    xs1'
+                    newListKnown
                     |> List.exists(fun x' ->
                         x'.Name = x.Name
                         )
                     |> not
                     )
-            loop xs1' xs2' (acc + 1) logLevel
+            loop newListKnown newListUnknown (acc + 1) logLevel
 
     programs
     |> List.partition(fun x -> x.SubPrograms.IsSome)
-    |> fun (xs1, xs2) -> loop xs1 xs2 0 10
+    |> fun (listKnown, listUnknown) ->
+        List.map (sumWeight) listKnown, listUnknown
+    |> fun (listKnown, listUnknown) -> loop listKnown listUnknown 0 10
+
+let tryFindOverweight (program: Program) =
+    let unWrapListOption = function
+        | None -> []
+        | Some(list) -> list
+
+    let rec loop (program: Program) (level: int) : Program option =
+        //
+        // What do I want to ask??
+        //
+        //
+        //
+        program.SubPrograms
+        |> unWrapListOption
+        |> function
+            | [] -> None
+            | (programs: Program list) ->
+                let isBalanced =
+                    programs
+                    |> List.map(fun x -> x.TotalWeight.Value)
+                    |> Set.ofList
+                    |> Set.toList
+                    |> List.length
+                    |> (=) 1
+                if isBalanced then
+                    None
+                else
+                    printfn "Unbalanced program with name: %s(%i), at level %i" program.Name program.Weight level
+                    programs
+                    |> List.map(fun (x: Program) ->
+                        printfn "sub-program with name: %s(%i) and total weight: %i" x.Name x.Weight x.TotalWeight.Value
+
+                        loop x (level + 1))
+                    |> List.filter(fun (x: Program option) -> x.IsSome)
+                    |> List.iter((printfn "===> %A <==="))
+                    None
+    loop program 0
+
+let showNameOverweight =
+    function
+    | None -> None
+    | Some(program: Program) ->
+        program
+        |> tryFindOverweight
 
 let showNameBottom (program: Program option) =
     if program.IsSome then program.Value.Name else "unknown"
@@ -1259,31 +1264,43 @@ let showNameBottom (program: Program option) =
 
 [<EntryPoint>]
 let main _ =
-    input2
-    |> deserialize
-    |> List.ofArray
-    |> List.map(parseProgram)
-    |> mkStructure
-    |> showNameBottom
-    |> printfn "%A"
+    [inputExample; input]
+    |> List.iter(fun inp ->
+        inp
+        |> deserialize
+        |> List.ofArray
+        |> List.map(parseProgram)
+        |> mkStructure
+        |> showNameOverweight
+        |> showNameBottom
+        |> printfn "%A"
+    )
+
+(*
+at level 2
+sub-program with name: nmhmw(979) and total weight: 1051
+sub-program with name: pknpuej(91) and total weight: 1051
+sub-program with name: rfkvap(655) and total weight: 1060
+
+Therefore rfkvap needs to be: rfkvap(646)
+Answer 646
+*)
+
 
     0 // return an integer exit code
 
 (*
-For example, if your list is the following:
+In the example above, this means that for ugml's disc to be balanced, gyxo, ebii, and jptl must all have the same weight, and they do: 61.
 
-pbga (66)
-xhth (57)
-ebii (61)
-havc (66)
-ktlj (57)
-fwft (72) -> ktlj, cntj, xhth
-qoyq (66)
-padx (45) -> pbga, havc, qoyq
-tknk (41) -> ugml, padx, fwft
-jptl (61)
-ugml (68) -> gyxo, ebii, jptl
-gyxo (61)
-cntj (57)
-...then you would be able to recreate the structure of the towers that looks like this:
+However, for tknk to be balanced, each of the programs standing on its disc and all programs above it must each match.
+This means that the following sums must all be the same:
+
+ugml + (gyxo + ebii + jptl) = 68 + (61 + 61 + 61) = 251
+padx + (pbga + havc + qoyq) = 45 + (66 + 66 + 66) = 243
+fwft + (ktlj + cntj + xhth) = 72 + (57 + 57 + 57) = 243
+As you can see, tknk's disc is unbalanced: ugml's stack is heavier than the other two.
+Even though the nodes above ugml are balanced, ugml itself is too heavy: it needs to be 8 units lighter for its stack to weigh 243 and keep the towers balanced.
+If this change were made, its weight would be 60.
+
+Given that exactly one program is the wrong weight, what would its weight need to be to balance the entire tower?
 *)
