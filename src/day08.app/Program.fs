@@ -62,19 +62,22 @@ let parseInput (input: string) =
     |> Array.map(parseLine)
     |> List.ofArray
 
-let processInstruction (state: Map<string,int>) (instruction: Instruction) =
+let processInstruction (state: Map<string,(int*int)>) (instruction: Instruction) =
     let (keyAddInput: string, addFunc: AddFunc) =
         fst instruction
     let (keyPredicateInput: string, predicateFunc: PredicateFunc) =
         snd instruction
     state
-    |> fun s -> if Map.containsKey keyAddInput s then s else Map.add keyAddInput 0 s
-    |> fun s -> if Map.containsKey keyPredicateInput s then s else Map.add keyPredicateInput 0 s
+    |> fun s -> if Map.containsKey keyAddInput s then s else Map.add keyAddInput (0, 0) s
+    |> fun s -> if Map.containsKey keyPredicateInput s then s else Map.add keyPredicateInput (0, 0) s
     |> fun s ->
-        let predicateInput = Map.find keyPredicateInput s
-        let addInput = Map.find keyAddInput s
+        let predicateInput = Map.find keyPredicateInput s |> fst
+        let (addInput, highest) = Map.find keyAddInput s
         if predicateFunc predicateInput |> not then s
-        else Map.add keyAddInput (addFunc addInput) s
+        else
+            let newInput = addFunc addInput
+            let newHighest = List.max [highest; newInput]
+            Map.add keyAddInput (newInput, newHighest) s
 
 [<EntryPoint>]
 let main _ =
@@ -83,7 +86,7 @@ let main _ =
     |> parseInput
     |> List.fold (processInstruction) Map.empty
     |> Map.toList
-    |> List.maxBy(snd)
+    |> List.maxBy(snd >> snd)
     |> (printfn "%A")
     0 // return an integer exit code
 
@@ -101,4 +104,9 @@ a is increased by 1 (to 1) because b is less than 5 (it is 0).
 c is decreased by -10 (to 10) because a is now greater than or equal to 1 (it is 1).
 c is increased by -20 (to -10) because c is equal to 10.
 After this process, the largest value in any register is 1.
+*)
+
+(*
+To be safe, the CPU also needs to know the highest value held in any register during this process so that it can decide how much memory to allocate to these operations.
+For example, in the above instructions, the highest value ever held was 10 (in register c after the third instruction was evaluated).
 *)
