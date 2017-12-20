@@ -20,13 +20,25 @@ let inputExample =
 let logAndContinue x = printfn "%A" x; x
 
 let cleanGarbage (input: string) =
-    input.Trim()
-    |> fun x -> x.Replace(Environment.NewLine, "")
+    let result1 =
+        input.Trim()
+        |> fun x -> x.Replace(Environment.NewLine, "")
+        // |> logAndContinue
+        |> fun x -> Regex.Replace(x, "!.", "")
+        // |> logAndContinue
+    let matchGarbage = "<[^>]*?>"
+    let matchesGarbage: MatchCollection = Regex.Matches(result1, matchGarbage)
+    printfn "********************"
+    matchesGarbage
+    |> Seq.toList
+    |> List.sumBy(fun x -> x.Value.Length - 2)
     |> logAndContinue
-    |> fun x -> Regex.Replace(x, "!.", "")
-    |> logAndContinue
-    |> fun x -> Regex.Replace(x, "<[^>]*?>", "")
-    |> logAndContinue
+    |> ignore
+    printfn "********************"
+
+    result1
+    |> fun x -> Regex.Replace(x, matchGarbage, "")
+    // |> logAndContinue
     |> fun x -> x.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
     |> fun x -> String.Join(',', x)
     |> fun x -> x.Replace(",", "")
@@ -56,7 +68,7 @@ let mkScore (data: string) =
                         |> Seq.map(fun x2 -> x2.Value |> int)
                         |> Set.ofSeq
                         |> Set.toList
-                        |> fun z -> z |> List.map(string >> (+) " ") |> List.fold (+) "" |> (printfn "%A"); z
+                        // |> fun z -> z |> List.map(string >> (+) " ") |> List.fold (+) "" |> (printfn "%A"); z
                         |> List.map(fun x3 -> x3, (+) 1 x3)
                         |> List.sortDescending
                         |> List.map(fun (a, b) -> (a |> string), (b |> string))
@@ -65,13 +77,13 @@ let mkScore (data: string) =
                     |> fun x5 -> x1, Regex.Replace(x5, "(\d+;)}", "$1")
                 )
                 |> Set.toList
-                |> logAndContinue
+                // |> logAndContinue
             List.fold (folder1) data replacePair1
-            |> logAndContinue
+            // |> logAndContinue
             |> loop
 
     data.Replace("{}", "1;")
-    |> logAndContinue
+    // |> logAndContinue
     |> loop
 
 let parseInput (cleanInput: string) =
@@ -82,7 +94,7 @@ let parseInput (cleanInput: string) =
     // cleanInput.Substring(0,38)
     // cleanInput.Substring(0,42)
     cleanInput
-    |> logAndContinue
+    // |> logAndContinue
     |> mkScore
     |> fun x -> x.Split([|';'|], StringSplitOptions.RemoveEmptyEntries)
 
