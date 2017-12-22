@@ -1,142 +1,70 @@
-﻿let circularExample = [0; 1; 2; 3; 4]
-let inputExample = [3; 4; 1; 5]
+﻿let inputExample = [3; 4; 1; 5]
 
-let circular = [0 .. 255]
 let input = [199; 0; 255; 136; 174; 254; 227; 16; 51; 85; 1; 2; 22; 17; 7; 192]
 
 let logAndContinue = fun x -> printfn "%A" x; x
 
-let realPos (len: int) (pos: int) =
-    if pos >= 0
-    then
-        if pos < len then pos
-        else (pos - len) % len
+let mkMergeCircle (idx: int) (len: int) (frontPart: int list) (backPart: int list) (oldCircle: int list) =
+    if frontPart.Length > 0 then
+        List.concat
+            [
+                frontPart
+                oldCircle.[frontPart.Length .. (idx - 1)]
+                backPart
+            ]
     else
-        if abs pos <= len then len + pos
-        else len - ((abs pos) % len)
-// let realPosL5 = realPos 5
-// realPosL5 -1
-// |> printfn "expected 4, got %i"
-// realPosL5 -1
-// |> printfn "expected 4, got %i"
-// realPosL5 -2
-// |> printfn "expected 3, got %i"
-// realPosL5 -5
-// |> printfn "expected 0, got %i"
-// realPosL5 -6
-// |> printfn "expected 4, got %i"
-// realPosL5 -7
-// |> printfn "expected 3, got %i"
-// realPosL5 10
-// |> printfn "expected 0, got %i"
-// realPosL5 5
-// |> printfn "expected 0, got %i"
-// realPosL5 0
-// |> printfn "expected 0, got %i"
-// realPosL5 4
-// |> printfn "expected 4, got %i"
-// realPosL5 7
-// |> printfn "expected 2, got %i"
+        List.concat
+            [
+                oldCircle.[0 .. (idx - 1)]
+                backPart
+                oldCircle.[(idx + len) .. (oldCircle.Length - 1)]
+            ]
 
-let prevPos (len: int) (pos: int) =
-    realPos len (pos - 1)
+let mkCircle (idx: int) (len: int) (circle: int list) =
+    let virtualCircle = List.append circle circle
+    let reversedRangeCircle =
+        virtualCircle
+        |> List.skip idx
+        |> List.take len
+        |> List.rev
+    let (frontPart, backPart) =
+        let hasOverflow =
+            idx + reversedRangeCircle.Length > circle.Length
+        if hasOverflow then
+            let idxSplit = circle.Length - idx
+            reversedRangeCircle
+            |> List.splitAt idxSplit
+            |> fun (backPart, frontPart) -> frontPart, backPart
+        else [], reversedRangeCircle
+    mkMergeCircle idx len frontPart backPart circle
+    |> logAndContinue
 
-let nextPos (len: int) (pos: int) =
-    realPos len (pos + 1)
+type State =
+    {
+        IndexPos: int
+        SkipAcc: int
+        Circle: int list
+    }
 
-type State = {StartPos: int; SkipAcc: int; CircularList: int list;}
-
-let mkCircularList (startPos: int) (endPos: int) (size: int) (circularList: int list) =
-    let len = circularList.Length
-    let nextPos = nextPos len
-    let prevPos = prevPos len
-    let rec loop (posA: int) (posB: int) (countDown: int) (xs: int list) =
-        // printfn "countDown: %i" countDown
-        if countDown = 0 then xs else
-        match posA.CompareTo(posB) with
-            | 0 ->
-                xs
-            | -1 ->
-                // if posA-1 < 0 then
-                //     printfn ">>> postA (%i) - 1 = %i" posA (posA-1)
-                //     printfn "%A" xs.[0..posA-1]
-                //     failwith "Bug 1"
-                // if posB+1 >= len then
-                //     printfn "%A" xs.[posB+1..len-1]
-                //     failwith "Bug 2"
-                // if posA+1 > posB-1 then
-                //     printfn ">>> postA (%i) + 1 = %i" posA (posA+1)
-                //     printfn ">>> postB (%i) - 1 = %i" posB (posB-1)
-                //     printfn "%A" xs.[posA+1..posB-1]
-                //     failwith "Bug 6"
-                List.concat
-                    [
-                        xs.[0..posA-1]
-                        [xs.[posB]]
-                        xs.[posA+1..posB-1]
-                        [xs.[posA]]
-                        xs.[posB+1..len-1]
-                    ]
-                |> fun xs1 ->
-                    if (nextPos posA).CompareTo(prevPos posB) = 1
-                    then
-                        printfn "%A" xs1
-                        xs1
-                    else
-                        loop (nextPos posA) (prevPos posB) (countDown - 1) xs1
-            | 1 ->
-                // if posB-1 < 0 then failwith "Bug 3"
-                // if posA+1 >= len then
-                //     printfn ">>> postA (%i) + 1 = %i" posA (posA+1)
-                //     printfn "%A" xs.[posA+1..len-1]
-                //     failwith "Bug 4"
-                // if posB+1 > posA-1 then
-                //     printfn ">>> postB (%i) + 1 = %i" posB (posB+1)
-                //     printfn ">>> postA (%i) - 1 = %i" posA (posA-1)
-                //     printfn "%A" xs.[posB+1..posA-1]
-                //     failwith "Bug 5"
-                List.concat
-                    [
-                        xs.[0..posB-1]
-                        [xs.[posA]]
-                        xs.[posB+1..posA-1]
-                        [xs.[posB]]
-                        xs.[posA+1..len-1]
-                    ]
-                |> fun xs1 ->
-                    if (nextPos posA).CompareTo(prevPos posB) = -1 && countDown < len
-                    then xs1
-                    else
-                        loop (nextPos posA) (prevPos posB) (countDown - 1) xs1
-            | _ -> failwith "Mission impossible !!"
-    loop startPos endPos size circularList
-
-let folder (state: State) (size: int) =
-    let len = state.CircularList.Length
-    let nextStartPos =
-        (state.StartPos + state.SkipAcc + size)
-        |> fun pos -> realPos len pos
-    let endPos =
-        (state.StartPos + size - 1)
-        |> fun pos -> realPos len pos
-
-    {state with
-        CircularList = mkCircularList state.StartPos endPos size state.CircularList
-        StartPos = nextStartPos
-        SkipAcc = state.SkipAcc + 1}
-    |> fun s -> printfn "%A" s; s
+let step (state: State) (len: int) =
+    let {IndexPos=idx; SkipAcc=skip; Circle=circle}: State = state
+    {
+        IndexPos = (idx + len + skip) % circle.Length
+        SkipAcc = skip + 1
+        Circle = mkCircle idx len circle
+    }
 
 [<EntryPoint>]
 let main _ =
-    let state = {StartPos = 0; SkipAcc = 0; CircularList = circularExample;}
-    inputExample
-    // let state = {StartPos = 0; SkipAcc = 0; CircularList = circular;}
-    // input
-    |> List.fold (folder) state
-    |> fun (s: State) -> s.CircularList
+    // let initState = {IndexPos = 0; SkipAcc = 0; Circle = [0 .. 4]}
+    // inputExample
+    let initState = {IndexPos = 0; SkipAcc = 0; Circle = [0 .. 255]}
+    input
+    |> List.fold (step) initState
+    |> logAndContinue
+    |> fun s -> s.Circle
     |> List.take 2
     |> List.fold (*) 1
     |> printfn "%A"
-    |> ignore
 
     0 // return an integer exit code
