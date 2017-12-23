@@ -1,8 +1,4 @@
-﻿let inputExample = [3; 4; 1; 5]
-
-let input = [199; 0; 255; 136; 174; 254; 227; 16; 51; 85; 1; 2; 22; 17; 7; 192]
-
-let logAndContinue = fun x -> printfn "%A" x; x
+﻿let logAndContinue = fun x -> printfn "%A" x; x
 
 let mkMergeCircle (idx: int) (len: int) (frontPart: int list) (backPart: int list) (oldCircle: int list) =
     if frontPart.Length > 0 then
@@ -37,7 +33,7 @@ let mkCircle (idx: int) (len: int) (circle: int list) =
             |> fun (backPart, frontPart) -> frontPart, backPart
         else [], reversedRangeCircle
     mkMergeCircle idx len frontPart backPart circle
-    |> logAndContinue
+    // |> logAndContinue
 
 type State =
     {
@@ -54,17 +50,51 @@ let step (state: State) (len: int) =
         Circle = mkCircle idx len circle
     }
 
-[<EntryPoint>]
-let main _ =
-    // let initState = {IndexPos = 0; SkipAcc = 0; Circle = [0 .. 4]}
-    // inputExample
+let toLengthsFromASCII (input: string) =
+    let hashingRounds = 64
+    let data =
+        List.concat
+            [
+                input |> Seq.map(int) |> List.ofSeq // to ASCII
+                [17; 31; 73; 47; 23] // Nounce (arbitrary number that can only be used once)
+            ]
+    List.collect (fun _ -> data) [1 .. hashingRounds]
+    |> logAndContinue
+
+let toSparseHash input =
     let initState = {IndexPos = 0; SkipAcc = 0; Circle = [0 .. 255]}
     input
+    |> toLengthsFromASCII
     |> List.fold (step) initState
+
+let toDenseHash (sparseHash: int list) =
+    let mapping = List.fold (^^^) 0
+    sparseHash
+    |> List.chunkBySize 16
+    |> List.map (mapping)
+
+// [65;27;9;1;4;3;40;50;91;7;6;0;2;5;68;22]
+// |> List.fold (^^^) 0
+// |> printfn "expected 64, got %A"
+
+
+let toHex (denseHash: int list) =
+    denseHash
+    |> List.map ((sprintf "%x") >> (fun x -> if x.Length = 1 then "0"+x else x))
+    |> List.fold (+) ""
+
+[<EntryPoint>]
+let main _ =
+    // ""
+    // "AoC 2017"
+    // "1,2,3"
+    // "1,2,4"
+    "199,0,255,136,174,254,227,16,51,85,1,2,22,17,7,192"
+    |> toSparseHash
     |> logAndContinue
     |> fun s -> s.Circle
-    |> List.take 2
-    |> List.fold (*) 1
+    |> toDenseHash
+    |> toHex
     |> printfn "%A"
 
     0 // return an integer exit code
