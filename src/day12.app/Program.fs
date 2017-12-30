@@ -36,43 +36,84 @@ let deserializeProgs (input: string) =
         }
     )
 
-let countConnectedTo (targetProgId: int) (progs: Prog list) =
-    let generatorConnected (generatedState: int list) =
-        if generatedState.IsEmpty then None else
-        let newGeneratedState =
+let mkConnectedGroup (itemInGroup: int) (progs: Prog list) =
+    let genConnected (connected: int list) =
+        if connected.IsEmpty then None else
+        let newConnected =
+            [
+                connected
+                progs |> List.filter (fun prog ->
+                    prog.Neighbours
+                    |> List.exists(fun neighbourId ->
+                        connected |> List.contains neighbourId
+                    )
+                ) |> List.map (fun prog -> prog.Id)
+            ]
+            |> List.concat
+            |> List.distinct
+        if connected = newConnected
+        then Some(connected, [])
+        else Some(connected, newConnected)
+    List.unfold genConnected [itemInGroup]
+    |> List.concat
+
+
+let mkConnectedGroups (progs: Prog list) =
+    let setOfGroups (groups: (int Set) Set) =
+            groups
+            |> Set.map (Set.toList)
+            |> Set.toList
+            |> List.concat
+            |> Set.ofList
+    let setOfProgs (progs: Prog list) =
             progs
-            |> List.filter(fun (prog: Prog) ->
-                prog.Neighbours
-                |> List.exists(fun neighbourId ->
-                    generatedState |> List.contains neighbourId
-                )
-            )
-            |> List.map(fun (prog: Prog) -> prog.Id)
-        if
-            generatedState = newGeneratedState
+            |> List.map (fun prog -> prog.Id)
+            |> Set.ofList
+    let isExhausted (groups: (int Set) Set) =
+        let fstSet = setOfProgs progs
+        let sndSet = setOfGroups groups
+        Set.difference fstSet sndSet |> (Set.count >> (=) 0)
+    let findFirstNotInGroups (groups: (int Set) Set) =
+        let fstSet = setOfProgs progs
+        let sndSet = setOfGroups groups
+        Set.difference fstSet sndSet |> Set.toList |> List.head
+    let mkNextGroup groups =
+        mkConnectedGroup
+            (findFirstNotInGroups groups)
+            progs
+        |> Set.ofList
+    let genGroups (groups: (int Set) Set) =
+        if groups.IsEmpty then None else
+        if isExhausted groups
         then
-            Some(generatedState, [])
+            Some(groups, Set.ofList [])
         else
-            Some(generatedState, newGeneratedState)
-    let connected =
-        let initialState = [targetProgId]
-        List.unfold generatorConnected initialState
-        |> List.concat
-        |> List.distinct
-        // |> logAndConinue
-    let isConnected (prog: Prog) =
-        List.contains prog.Id connected
-    progs
-    |> List.filter(isConnected)
-    |> List.length
+            let newGroup : int Set =
+                mkNextGroup groups
+            let newGroups : (int Set) Set =
+                newGroup :: (Set.toList groups)
+                |> Set.ofList
+            Some(groups, newGroups)
+
+    let groups : (int Set) Set =
+        Set.ofList [mkNextGroup (Set.ofList [])]
+    List.unfold genGroups groups
+    |> List.last
+
+let countConnectedTo (progId: int) (groups: (int Set) Set) =
+    groups
+    |> Set.filter (fun group -> Set.contains progId group)
+    |> Set.unionMany
+    |> Set.count
 
 [<EntryPoint>]
 let main _ =
     // exampleInput
     File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "input.txt"))
     |> deserializeProgs
-    // |> List.map(logAndConinue)
-    |> countConnectedTo 0
+    |> mkConnectedGroups
+    // |> countConnectedTo 0
+    |> Set.count
     |> logAndConinue
     |> ignore
     0 // return an integer exit code
