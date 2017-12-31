@@ -15,9 +15,7 @@ let exampleInput =
 6 <-> 4, 5
     """
 
-type Prog = {Id: int; Neighbours: int list}
-
-let deserializeProgs (input: string) =
+let deserializeGraph (input: string) =
     input.Trim().Split([|Environment.NewLine|], StringSplitOptions.RemoveEmptyEntries)
     |> List.ofSeq
     |> List.map(fun line ->
@@ -30,89 +28,37 @@ let deserializeProgs (input: string) =
                 Regex.Split(x.[1].Trim(), "\s*,\s*")
                 |> List.ofSeq
                 |> List.map(int)
-        {
-            Id = id
-            Neighbours = neighbours
-        }
+
+        id, neighbours
     )
+    |> Map.ofList
 
-let mkConnectedGroup (itemInGroup: int) (progs: Prog list) =
-    let genConnected (connected: int list) =
-        if connected.IsEmpty then None else
-        let newConnected =
-            [
-                connected
-                progs |> List.filter (fun prog ->
-                    prog.Neighbours
-                    |> List.exists(fun neighbourId ->
-                        connected |> List.contains neighbourId
-                    )
-                ) |> List.map (fun prog -> prog.Id)
-            ]
-            |> List.concat
-            |> List.distinct
-        if connected = newConnected
-        then Some(connected, [])
-        else Some(connected, newConnected)
-    List.unfold genConnected [itemInGroup]
-    |> List.concat
+let neighboursOfNeighbours (target: int) (graph: Map<int, int list>) =
+    let rec loop (v: int) (seen: int Set) =
+        match Map.tryFind v graph with
+        | Some values ->
+            let newSeen = Set.union (Set.ofList values) seen
+            values
+            |> List.filter (fun v -> not <| Set.contains v seen)
+            |> List.map (fun v -> loop v newSeen)
+            |> List.fold (Set.union) seen
+        | None -> seen
+    let seen = Set.singleton target
+    loop target seen
 
-
-let mkConnectedGroups (progs: Prog list) =
-    let setOfGroups (groups: (int Set) Set) =
-            groups
-            |> Set.map (Set.toList)
-            |> Set.toList
-            |> List.concat
-            |> Set.ofList
-    let setOfProgs (progs: Prog list) =
-            progs
-            |> List.map (fun prog -> prog.Id)
-            |> Set.ofList
-    let isExhausted (groups: (int Set) Set) =
-        let fstSet = setOfProgs progs
-        let sndSet = setOfGroups groups
-        Set.difference fstSet sndSet |> (Set.count >> (=) 0)
-    let findFirstNotInGroups (groups: (int Set) Set) =
-        let fstSet = setOfProgs progs
-        let sndSet = setOfGroups groups
-        Set.difference fstSet sndSet |> Set.toList |> List.head
-    let mkNextGroup groups =
-        mkConnectedGroup
-            (findFirstNotInGroups groups)
-            progs
-        |> Set.ofList
-    let genGroups (groups: (int Set) Set) =
-        if groups.IsEmpty then None else
-        if isExhausted groups
-        then
-            Some(groups, Set.ofList [])
-        else
-            let newGroup : int Set =
-                mkNextGroup groups
-            let newGroups : (int Set) Set =
-                newGroup :: (Set.toList groups)
-                |> Set.ofList
-            Some(groups, newGroups)
-
-    let groups : (int Set) Set =
-        Set.ofList [mkNextGroup (Set.ofList [])]
-    List.unfold genGroups groups
-    |> List.last
-
-let countConnectedTo (progId: int) (groups: (int Set) Set) =
-    groups
-    |> Set.filter (fun group -> Set.contains progId group)
-    |> Set.unionMany
-    |> Set.count
+let groupsOfNeighboursOfNeighbours (graph: Map<int, int list>) =
+    List.fold
+        (fun groups target -> Set.add (neighboursOfNeighbours target graph) groups)
+        Set.empty
+        (List.map fst <| Map.toList graph)
 
 [<EntryPoint>]
 let main _ =
     // exampleInput
     File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "input.txt"))
-    |> deserializeProgs
-    |> mkConnectedGroups
-    // |> countConnectedTo 0
+    |> deserializeGraph
+    |> groupsOfNeighboursOfNeighbours
+    // |> neighboursOfNeighbours 0
     |> Set.count
     |> logAndConinue
     |> ignore
